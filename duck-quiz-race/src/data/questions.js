@@ -153,9 +153,6 @@ export const ALL_QUESTIONS = [
   },
 ]
 
-export function getRandomQuestions(count = 8) {
-  const shuffled = [...ALL_QUESTIONS].sort(() => Math.random() - 0.5)
-  return shuffled.slice(0, Math.min(count, ALL_QUESTIONS.length))
 }
 
 // ── Thêm 30 câu nữa để đủ 50 ─────────────────────────────────────────────────
