@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-export default function QuestionBox({ question, onAnswer, timeLimit = 10 }) {
+export default function QuestionBox({ question, onAnswer, timeLimit = 12 }) {
   const [selected, setSelected] = useState(null)
   const [timeLeft, setTimeLeft] = useState(timeLimit)
   const [done, setDone] = useState(false)
@@ -15,10 +15,10 @@ export default function QuestionBox({ question, onAnswer, timeLimit = 10 }) {
     if (done) return
     if (timeLeft <= 0) {
       setDone(true)
-      onAnswer(-1, false) // timeout = wrong
+      onAnswer(-1, false, true) // timeout
       return
     }
-    const t = setTimeout(() => setTimeLeft(p => p - 0.1), 100)
+    const t = setTimeout(() => setTimeLeft(p => +(p - 0.1).toFixed(2)), 100)
     return () => clearTimeout(t)
   }, [timeLeft, done, onAnswer])
 
@@ -27,14 +27,15 @@ export default function QuestionBox({ question, onAnswer, timeLimit = 10 }) {
     setDone(true)
     setSelected(idx)
     const correct = idx === question.ans
-    setTimeout(() => onAnswer(idx, correct), 900)
+    setTimeout(() => onAnswer(idx, correct, false), 900)
   }
 
   function getOptStyle(idx) {
-    if (!done && selected === null) return styles.opt
+    if (!done) return styles.opt
     if (idx === question.ans) return { ...styles.opt, ...styles.optCorrect }
-    if (idx === selected && idx !== question.ans) return { ...styles.opt, ...styles.optWrong }
-    return { ...styles.opt, opacity: 0.45 }
+    if (idx === selected && !done) return styles.opt
+    if (idx === selected) return { ...styles.opt, ...styles.optWrong }
+    return { ...styles.opt, opacity: 0.4 }
   }
 
   const pct = Math.max(0, (timeLeft / timeLimit) * 100)
@@ -42,15 +43,14 @@ export default function QuestionBox({ question, onAnswer, timeLimit = 10 }) {
 
   return (
     <div style={styles.overlay}>
-      {/* Timer bar */}
       <div style={styles.timerTrack}>
         <div style={{ ...styles.timerBar, width: `${pct}%`, background: barColor }} />
       </div>
-
       <div style={styles.inner}>
         <div style={styles.qHeader}>
           <span style={styles.qBadge}>❓ Câu hỏi</span>
           <span style={styles.qTimer}>{Math.ceil(timeLeft)}s</span>
+          <span style={styles.ruleBadge}>✅ +2~4 bước · ❌ -1 bước · ⏰ đứng yên</span>
         </div>
         <p style={styles.qText}>{question.q}</p>
         <div style={styles.opts}>
@@ -69,48 +69,36 @@ export default function QuestionBox({ question, onAnswer, timeLimit = 10 }) {
 const styles = {
   overlay: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
-    background: 'rgba(10, 15, 40, 0.97)',
+    background: 'rgba(8, 12, 35, 0.98)',
     borderTop: '1px solid rgba(255,255,255,0.1)',
     fontFamily: "'Segoe UI', system-ui, sans-serif",
   },
-  timerTrack: {
-    height: '4px', background: 'rgba(255,255,255,0.1)', overflow: 'hidden',
-  },
-  timerBar: {
-    height: '100%', borderRadius: '2px', transition: 'width 0.1s linear, background 0.3s',
-  },
-  inner: { padding: '1.25rem 1.5rem' },
-  qHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' },
+  timerTrack: { height: '4px', background: 'rgba(255,255,255,0.1)', overflow: 'hidden' },
+  timerBar: { height: '100%', borderRadius: '2px', transition: 'width 0.1s linear, background 0.3s' },
+  inner: { padding: '1rem 1.25rem' },
+  qHeader: { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' },
   qBadge: {
     background: 'rgba(255,215,0,0.15)', color: '#FFD700',
-    padding: '4px 12px', borderRadius: '99px', fontSize: '12px', fontWeight: 600,
+    padding: '3px 10px', borderRadius: '99px', fontSize: '12px', fontWeight: 600,
   },
   qTimer: { color: 'rgba(255,255,255,0.5)', fontSize: '13px' },
-  qText: { margin: '0 0 1rem', color: '#fff', fontSize: '17px', fontWeight: 600, lineHeight: 1.4 },
-  opts: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' },
+  ruleBadge: { color: 'rgba(255,255,255,0.35)', fontSize: '11px', marginLeft: 'auto' },
+  qText: { margin: '0 0 0.75rem', color: '#fff', fontSize: '16px', fontWeight: 600, lineHeight: 1.4 },
+  opts: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '7px' },
   opt: {
-    display: 'flex', alignItems: 'center', gap: '10px',
-    padding: '11px 14px', borderRadius: '12px',
-    border: '1px solid rgba(255,255,255,0.15)',
-    background: 'rgba(255,255,255,0.07)',
-    color: '#fff', fontSize: '14px', textAlign: 'left', cursor: 'pointer',
-    transition: 'background 0.15s, border 0.15s',
-    fontFamily: 'inherit',
+    display: 'flex', alignItems: 'center', gap: '8px',
+    padding: '10px 12px', borderRadius: '10px',
+    border: '1px solid rgba(255,255,255,0.12)',
+    background: 'rgba(255,255,255,0.06)',
+    color: '#fff', fontSize: '13px', textAlign: 'left', cursor: 'pointer',
+    transition: 'background 0.15s', fontFamily: 'inherit',
   },
-  optCorrect: {
-    background: 'rgba(74,222,128,0.2)',
-    border: '1px solid rgba(74,222,128,0.6)',
-    color: '#4ade80',
-  },
-  optWrong: {
-    background: 'rgba(248,113,113,0.2)',
-    border: '1px solid rgba(248,113,113,0.6)',
-    color: '#f87171',
-  },
+  optCorrect: { background: 'rgba(74,222,128,0.2)', border: '1px solid rgba(74,222,128,0.6)', color: '#4ade80' },
+  optWrong: { background: 'rgba(248,113,113,0.2)', border: '1px solid rgba(248,113,113,0.5)', color: '#f87171' },
   optLabel: {
-    minWidth: '24px', height: '24px', borderRadius: '6px',
+    minWidth: '22px', height: '22px', borderRadius: '6px',
     background: 'rgba(255,255,255,0.1)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: '12px', fontWeight: 700,
+    fontSize: '11px', fontWeight: 700, flexShrink: 0,
   },
 }

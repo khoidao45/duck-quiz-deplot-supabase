@@ -1,45 +1,356 @@
 export const ALL_QUESTIONS = [
-  // Kiến thức chung
-  { q: "Thủ đô của Việt Nam là gì?", opts: ["Hồ Chí Minh", "Hà Nội", "Đà Nẵng", "Huế"], ans: 1 },
-  { q: "Sông dài nhất thế giới?", opts: ["Amazon", "Nile", "Mekong", "Mississippi"], ans: 1 },
-  { q: "Hành tinh gần Mặt Trời nhất?", opts: ["Kim Tinh", "Thổ Tinh", "Hỏa Tinh", "Thủy Tinh"], ans: 3 },
-  { q: "Nước nào có dân số đông nhất thế giới?", opts: ["Mỹ", "Trung Quốc", "Ấn Độ", "Brazil"], ans: 2 },
-  { q: "FIFA World Cup tổ chức mấy năm một lần?", opts: ["2", "3", "4", "5"], ans: 2 },
-  { q: "Đại dương lớn nhất thế giới?", opts: ["Đại Tây Dương", "Thái Bình Dương", "Ấn Độ Dương", "Bắc Băng Dương"], ans: 1 },
-  { q: "Vạn Lý Trường Thành ở nước nào?", opts: ["Nhật Bản", "Hàn Quốc", "Trung Quốc", "Mông Cổ"], ans: 2 },
-  { q: "Kim tự tháp nổi tiếng nhất ở đâu?", opts: ["Mexico", "Peru", "Sudan", "Ai Cập"], ans: 3 },
-
-  // Toán & Khoa học
-  { q: "1 + 1 × 2 = ?", opts: ["4", "3", "2", "6"], ans: 1 },
-  { q: "2³ = ?", opts: ["6", "8", "9", "12"], ans: 1 },
-  { q: "Công thức hóa học của nước là gì?", opts: ["CO2", "H2O", "NaCl", "O2"], ans: 1 },
-  { q: "Tốc độ ánh sáng xấp xỉ bao nhiêu km/s?", opts: ["100,000", "300,000", "500,000", "1,000,000"], ans: 1 },
-  { q: "Nguyên tố hóa học có ký hiệu 'O' là gì?", opts: ["Vàng", "Bạc", "Oxy", "Osmium"], ans: 2 },
-  { q: "Số Pi (π) xấp xỉ bằng?", opts: ["2.14", "3.14", "4.14", "5.14"], ans: 1 },
-  { q: "Căn bậc 2 của 144 là?", opts: ["10", "11", "12", "14"], ans: 2 },
-
-  // Động vật & Thiên nhiên
-  { q: "Vịt đẻ ra cái gì?", opts: ["Vịt con", "Trứng", "Lông", "Bánh"], ans: 1 },
-  { q: "Con gì kêu 'gâu gâu'?", opts: ["Mèo", "Vịt", "Chó", "Heo"], ans: 2 },
-  { q: "Động vật nào chạy nhanh nhất trên cạn?", opts: ["Sư tử", "Báo gêpa", "Ngựa", "Đà điểu"], ans: 1 },
-  { q: "Loài chim không biết bay nổi tiếng nhất?", opts: ["Cú mèo", "Chim cánh cụt", "Sẻ", "Vịt"], ans: 1 },
-  { q: "Con gì sống lâu nhất?", opts: ["Voi", "Rùa", "Cá voi", "Đại bàng"], ans: 1 },
-  { q: "Màu gì thu được khi pha đỏ và vàng?", opts: ["Tím", "Xanh", "Cam", "Nâu"], ans: 2 },
-
-  // Công nghệ
-  { q: "Ngôn ngữ lập trình nào có logo là con trăn?", opts: ["Java", "Ruby", "Python", "Snake"], ans: 2 },
-  { q: "WWW là viết tắt của gì?", opts: ["World Wide Web", "World Wide Window", "Wide World Web", "Web World Wide"], ans: 0 },
-  { q: "CPU là viết tắt của gì?", opts: ["Computer Processing Unit", "Central Processing Unit", "Core Processing Unit", "Central Power Unit"], ans: 1 },
-  { q: "1 GB = bao nhiêu MB?", opts: ["100", "512", "1024", "2048"], ans: 2 },
-
-  // Văn hóa & Lịch sử Việt Nam
-  { q: "Quốc khánh Việt Nam là ngày nào?", opts: ["30/4", "2/9", "19/8", "1/1"], ans: 1 },
-  { q: "Việt Nam có bao nhiêu tỉnh thành?", opts: ["58", "61", "63", "65"], ans: 2 },
-  { q: "Tiền tệ của Việt Nam là gì?", opts: ["Đô la", "Đồng", "Yên", "Bath"], ans: 1 },
-  { q: "Núi cao nhất Việt Nam?", opts: ["Ngọc Linh", "Phan Xi Păng", "Bạch Mã", "Langbiang"], ans: 1 },
+  // ── Đổi mới 1986–1996 ─────────────────────────────────────────────────────
+  {
+    q: "Đại hội Đảng lần thứ mấy (năm nào) chính thức khởi xướng đường lối Đổi mới?",
+    opts: ["Đại hội V – 1982", "Đại hội VI – 1986", "Đại hội VII – 1991", "Đại hội VIII – 1996"],
+    ans: 1,
+  },
+  {
+    q: "Tư tưởng cốt lõi của Đổi mới 1986 là gì?",
+    opts: [
+      "Tập trung hóa toàn bộ nền kinh tế",
+      "Phát triển kinh tế thị trường định hướng XHCN",
+      "Quốc hữu hóa toàn bộ tư liệu sản xuất",
+      "Mở cửa hoàn toàn theo mô hình phương Tây",
+    ],
+    ans: 1,
+  },
+  {
+    q: "Trước Đổi mới, cơ chế kinh tế Việt Nam vận hành theo mô hình nào?",
+    opts: [
+      "Kinh tế thị trường tự do",
+      "Kinh tế hỗn hợp",
+      "Kế hoạch hóa tập trung, bao cấp",
+      "Kinh tế tư nhân là chủ đạo",
+    ],
+    ans: 2,
+  },
+  {
+    q: "Nghị quyết 10 (Khoán 10) năm 1988 tác động trực tiếp đến lĩnh vực nào?",
+    opts: ["Công nghiệp nặng", "Nông nghiệp và hộ nông dân", "Thương mại quốc tế", "Giáo dục đào tạo"],
+    ans: 1,
+  },
+  {
+    q: "Sau Đổi mới, Việt Nam vươn lên thành nước xuất khẩu gạo lớn thứ mấy thế giới vào đầu thập niên 1990?",
+    opts: ["Thứ nhất", "Thứ hai", "Thứ ba", "Thứ năm"],
+    ans: 1,
+  },
+  {
+    q: "Lạm phát của Việt Nam đạt mức đỉnh điểm vào năm nào trước khi được kiềm chế nhờ Đổi mới?",
+    opts: ["1983", "1986", "1988", "1991"],
+    ans: 2,
+  },
+  {
+    q: "Luật Đầu tư nước ngoài đầu tiên của Việt Nam được ban hành năm nào?",
+    opts: ["1986", "1987", "1990", "1992"],
+    ans: 1,
+  },
+  {
+    q: "Hiến pháp năm 1992 xác định nền kinh tế Việt Nam là nền kinh tế gì?",
+    opts: [
+      "Kinh tế kế hoạch hóa tập trung",
+      "Kinh tế thị trường tự do",
+      "Kinh tế hàng hóa nhiều thành phần theo định hướng XHCN",
+      "Kinh tế tư nhân là chủ đạo",
+    ],
+    ans: 2,
+  },
+  {
+    q: "Việt Nam bình thường hóa quan hệ ngoại giao với Hoa Kỳ vào năm nào?",
+    opts: ["1991", "1993", "1995", "1997"],
+    ans: 2,
+  },
+  {
+    q: "Việt Nam gia nhập ASEAN vào năm nào?",
+    opts: ["1991", "1993", "1995", "1997"],
+    ans: 2,
+  },
+  // ── Đổi mới 1996 đến nay ─────────────────────────────────────────────────
+  {
+    q: "Đại hội VIII (1996) xác định Việt Nam bước vào thời kỳ nào?",
+    opts: [
+      "Thời kỳ quá độ lên chủ nghĩa xã hội",
+      "Thời kỳ đẩy mạnh công nghiệp hóa, hiện đại hóa",
+      "Thời kỳ hội nhập quốc tế toàn diện",
+      "Thời kỳ phát triển kinh tế tri thức",
+    ],
+    ans: 1,
+  },
+  {
+    q: "Việt Nam gia nhập WTO vào năm nào?",
+    opts: ["2004", "2005", "2007", "2009"],
+    ans: 2,
+  },
+  {
+    q: "Tại Đại hội IX (2001), Đảng điều chỉnh phương châm đối ngoại từ 'muốn là bạn' sang cụm từ nào?",
+    opts: [
+      "Sẵn sàng là bạn, là đối tác tin cậy",
+      "Độc lập, tự chủ, hòa bình",
+      "Hội nhập quốc tế toàn diện",
+      "Đa phương hóa, toàn cầu hóa",
+    ],
+    ans: 0,
+  },
+  {
+    q: "Việc chuyển từ 'muốn là bạn' sang 'sẵn sàng là bạn, là đối tác tin cậy' tại Đại hội IX mang ý nghĩa gì?",
+    opts: [
+      "Việt Nam chủ động hơn, thể hiện vị thế bình đẳng trong quan hệ quốc tế",
+      "Việt Nam từ bỏ chính sách độc lập tự chủ",
+      "Việt Nam chỉ kết bạn với các nước XHCN",
+      "Việt Nam phụ thuộc vào nước lớn hơn trước",
+    ],
+    ans: 0,
+  },
+  {
+    q: "Chiến lược CNH–HĐH giai đoạn 1996–2020 đặt mục tiêu đưa VN cơ bản trở thành nước công nghiệp vào năm nào?",
+    opts: ["2010", "2015", "2020", "2025"],
+    ans: 2,
+  },
+  {
+    q: "Đại hội X (2006) xác định kinh tế tư nhân có vai trò như thế nào?",
+    opts: [
+      "Là thành phần kinh tế phụ, chịu sự kiểm soát chặt chẽ",
+      "Là một trong những động lực quan trọng của nền kinh tế",
+      "Bị hạn chế để bảo vệ kinh tế nhà nước",
+      "Không được hoạt động trong lĩnh vực chiến lược",
+    ],
+    ans: 1,
+  },
+  {
+    q: "Việt Nam lần đầu tiên đăng cai tổ chức Hội nghị thượng đỉnh APEC vào năm nào?",
+    opts: ["2004", "2006", "2007", "2010"],
+    ans: 2,
+  },
+  {
+    q: "Nghị quyết Trung ương 4 khóa XI (2012) tập trung chỉnh đốn điều gì trong Đảng?",
+    opts: [
+      "Cải cách hành chính nhà nước",
+      "Xây dựng kinh tế thị trường",
+      "Ngăn chặn suy thoái về tư tưởng chính trị, đạo đức, lối sống",
+      "Phát triển giáo dục đào tạo",
+    ],
+    ans: 2,
+  },
+  {
+    q: "Đại hội XII (2016) xác định hai nhiệm vụ chiến lược của cách mạng Việt Nam là gì?",
+    opts: [
+      "Xây dựng CNXH và bảo vệ Tổ quốc XHCN",
+      "Phát triển kinh tế và hội nhập quốc tế",
+      "Công nghiệp hóa và hiện đại hóa",
+      "Xóa đói giảm nghèo và phát triển bền vững",
+    ],
+    ans: 0,
+  },
+  {
+    q: "Chính sách '4 không' trong quốc phòng: không liên minh quân sự, không cho nước ngoài đặt căn cứ, không dùng vũ lực trước, và điều gì nữa?",
+    opts: [
+      "Không tham gia tổ chức quốc tế",
+      "Không dựa vào nước này để chống nước kia",
+      "Không xuất khẩu vũ khí",
+      "Không phát triển vũ khí hạt nhân",
+    ],
+    ans: 1,
+  },
 ]
 
 export function getRandomQuestions(count = 8) {
   const shuffled = [...ALL_QUESTIONS].sort(() => Math.random() - 0.5)
-  return shuffled.slice(0, count)
+  return shuffled.slice(0, Math.min(count, ALL_QUESTIONS.length))
+}
+
+// ── Thêm 30 câu nữa để đủ 50 ─────────────────────────────────────────────────
+export const EXTRA_QUESTIONS = [
+  {
+    q: "Đại hội VII (1991) thông qua 'Cương lĩnh xây dựng đất nước trong thời kỳ quá độ' hướng tới mục tiêu gì?",
+    opts: ["Xây dựng nước XHCN dân giàu, nước mạnh, xã hội công bằng, văn minh", "Công nghiệp hóa nhanh nhất có thể", "Hội nhập kinh tế toàn cầu ngay lập tức", "Tư nhân hóa toàn bộ doanh nghiệp nhà nước"],
+    ans: 0,
+  },
+  {
+    q: "Việt Nam thiết lập quan hệ ngoại giao với Liên minh Châu Âu (EU) năm nào?",
+    opts: ["1990", "1995", "1997", "2000"],
+    ans: 1,
+  },
+  {
+    q: "Sự kiện nào đánh dấu Việt Nam thoát khỏi tình trạng bị bao vây, cô lập về kinh tế vào đầu thập niên 1990?",
+    opts: ["Gia nhập ASEAN", "Bình thường hóa quan hệ với Trung Quốc và Hoa Kỳ", "Ký hiệp định thương mại với EU", "Gia nhập WTO"],
+    ans: 1,
+  },
+  {
+    q: "Khái niệm 'kinh tế tri thức' được Đảng đề cập chính thức lần đầu tại Đại hội nào?",
+    opts: ["Đại hội VIII", "Đại hội IX", "Đại hội X", "Đại hội XI"],
+    ans: 1,
+  },
+  {
+    q: "Hiệp định Thương mại Song phương Việt Nam – Hoa Kỳ (BTA) có hiệu lực năm nào?",
+    opts: ["1999", "2000", "2001", "2003"],
+    ans: 2,
+  },
+  {
+    q: "Chủ trương 'xây dựng nền kinh tế độc lập tự chủ đi đôi với hội nhập quốc tế' được khẳng định mạnh mẽ tại Đại hội nào?",
+    opts: ["Đại hội VIII", "Đại hội IX", "Đại hội X", "Đại hội XI"],
+    ans: 1,
+  },
+  {
+    q: "Nguyên tắc 'đa phương hóa, đa dạng hóa' quan hệ đối ngoại của Việt Nam nghĩa là gì?",
+    opts: [
+      "Chỉ quan hệ với các nước lớn",
+      "Mở rộng quan hệ với nhiều quốc gia, không phụ thuộc một phía",
+      "Chỉ ưu tiên quan hệ kinh tế",
+      "Tham gia liên minh quân sự đa phương",
+    ],
+    ans: 1,
+  },
+  {
+    q: "Tỷ lệ hộ nghèo của Việt Nam giảm từ khoảng bao nhiêu % (1993) xuống dưới 10% (2015)?",
+    opts: ["38%", "50%", "58%", "70%"],
+    ans: 2,
+  },
+  {
+    q: "Đảng xác định phòng chống tham nhũng là nhiệm vụ 'cấp bách' từ Đại hội nào?",
+    opts: ["Đại hội IX", "Đại hội X", "Đại hội XI", "Đại hội XII"],
+    ans: 1,
+  },
+  {
+    q: "Luật Doanh nghiệp đầu tiên của Việt Nam được ban hành năm nào, mở đường cho kinh tế tư nhân?",
+    opts: ["1995", "1997", "1999", "2000"],
+    ans: 2,
+  },
+  {
+    q: "Việt Nam đăng cai ASEAN Summit lần đầu vào năm nào?",
+    opts: ["1998", "2001", "2004", "2010"],
+    ans: 0,
+  },
+  {
+    q: "Đại hội XI (2011) bổ sung thêm một trụ cột vào mô hình phát triển, đó là gì?",
+    opts: ["Phát triển văn hóa", "Phát triển bền vững về môi trường", "Bảo vệ quyền con người", "Dân chủ hóa xã hội"],
+    ans: 1,
+  },
+  {
+    q: "GDP bình quân đầu người Việt Nam vượt mức 'nước thu nhập thấp' (1.000 USD) vào năm nào?",
+    opts: ["2005", "2008", "2010", "2012"],
+    ans: 1,
+  },
+  {
+    q: "Hiệp định Đối tác Toàn diện và Tiến bộ xuyên Thái Bình Dương (CPTPP) Việt Nam ký kết năm nào?",
+    opts: ["2016", "2017", "2018", "2019"],
+    ans: 2,
+  },
+  {
+    q: "Đại hội XIII (2021) đặt mục tiêu đến năm 2045 Việt Nam trở thành nước như thế nào?",
+    opts: [
+      "Nước công nghiệp phát triển",
+      "Nước phát triển, thu nhập cao",
+      "Nước đứng đầu ASEAN về kinh tế",
+      "Nước xuất khẩu công nghệ hàng đầu",
+    ],
+    ans: 1,
+  },
+  {
+    q: "Phong trào 'Toàn dân đoàn kết xây dựng đời sống văn hóa' được phát động từ năm nào?",
+    opts: ["1990", "1995", "2000", "2005"],
+    ans: 2,
+  },
+  {
+    q: "Việt Nam lần đầu trở thành Ủy viên không thường trực Hội đồng Bảo an LHQ nhiệm kỳ nào?",
+    opts: ["1997–1998", "2000–2001", "2008–2009", "2010–2011"],
+    ans: 2,
+  },
+  {
+    q: "Ngành kinh tế nào đóng góp lớn nhất vào tăng trưởng xuất khẩu của Việt Nam giai đoạn 2000–2018?",
+    opts: ["Nông nghiệp", "Dầu khí", "Dệt may, điện tử, da giày", "Du lịch"],
+    ans: 2,
+  },
+  {
+    q: "Chính sách 'xã hội hóa' giáo dục, y tế của Đảng có nghĩa là gì?",
+    opts: [
+      "Nhà nước độc quyền cung cấp dịch vụ",
+      "Huy động nhiều thành phần tham gia đầu tư, phát triển",
+      "Tư nhân hóa hoàn toàn",
+      "Chỉ ưu tiên vùng thành thị",
+    ],
+    ans: 1,
+  },
+  {
+    q: "Đại hội IX xác định 'Đảng Cộng sản Việt Nam là đội tiên phong của giai cấp nào'?",
+    opts: [
+      "Giai cấp công nhân",
+      "Giai cấp công nhân, đồng thời là đội tiên phong của nhân dân lao động và dân tộc Việt Nam",
+      "Toàn thể nhân dân Việt Nam",
+      "Giai cấp nông dân",
+    ],
+    ans: 1,
+  },
+  {
+    q: "Mục tiêu 'dân giàu, nước mạnh, dân chủ, công bằng, văn minh' được hoàn thiện tại Đại hội nào?",
+    opts: ["Đại hội IX", "Đại hội X", "Đại hội XI", "Đại hội XII"],
+    ans: 2,
+  },
+  {
+    q: "Luật Đất đai năm 1993 có ý nghĩa gì với nông nghiệp Việt Nam?",
+    opts: [
+      "Quốc hữu hóa toàn bộ đất đai",
+      "Giao quyền sử dụng đất lâu dài cho hộ gia đình nông dân",
+      "Cho phép mua bán đất tự do không hạn chế",
+      "Tập trung đất vào hợp tác xã",
+    ],
+    ans: 1,
+  },
+  {
+    q: "Khủng hoảng tài chính châu Á 1997–1998 tác động đến Việt Nam như thế nào?",
+    opts: [
+      "Không ảnh hưởng vì Việt Nam chưa hội nhập",
+      "Làm tốc độ tăng trưởng GDP chậm lại nhưng không khủng hoảng nghiêm trọng",
+      "Gây siêu lạm phát như năm 1988",
+      "Buộc Việt Nam phải vay IMF khẩn cấp",
+    ],
+    ans: 1,
+  },
+  {
+    q: "Chủ trương 'xây dựng nhà nước pháp quyền XHCN' được Đảng đề ra chính thức tại Đại hội nào?",
+    opts: ["Đại hội VII", "Đại hội VIII", "Đại hội IX", "Đại hội X"],
+    ans: 0,
+  },
+  {
+    q: "Tốc độ tăng trưởng GDP bình quân của Việt Nam giai đoạn 1991–2000 đạt khoảng bao nhiêu %/năm?",
+    opts: ["4–5%", "6–7%", "7–8%", "9–10%"],
+    ans: 2,
+  },
+  {
+    q: "Đường lối đối ngoại 'độc lập, tự chủ, hòa bình, hữu nghị, hợp tác và phát triển' được khẳng định từ Đại hội nào?",
+    opts: ["Đại hội VI", "Đại hội VII", "Đại hội VIII", "Đại hội IX"],
+    ans: 1,
+  },
+  {
+    q: "Việt Nam gia nhập Diễn đàn Kinh tế Thế giới (WEF) lần đầu tổ chức tại Hà Nội năm nào?",
+    opts: ["2008", "2010", "2015", "2018"],
+    ans: 3,
+  },
+  {
+    q: "Ba đột phá chiến lược trong Chiến lược phát triển KT-XH 2011–2020 gồm: thể chế, nguồn nhân lực, và gì nữa?",
+    opts: ["Khoa học công nghệ", "Cơ sở hạ tầng", "Môi trường đầu tư", "Cải cách hành chính"],
+    ans: 1,
+  },
+  {
+    q: "Nghị quyết 36 (2004) của Bộ Chính trị về 'Chiến lược biển' đặt mục tiêu gì?",
+    opts: [
+      "Đánh bắt thủy sản tăng gấp đôi",
+      "Đưa Việt Nam trở thành quốc gia mạnh về biển vào năm 2020",
+      "Xây dựng hải quân hiện đại nhất Đông Nam Á",
+      "Khai thác dầu khí tăng 50%",
+    ],
+    ans: 1,
+  },
+  {
+    q: "Hiệp định Thương mại Tự do Việt Nam – EU (EVFTA) có hiệu lực từ năm nào?",
+    opts: ["2018", "2019", "2020", "2021"],
+    ans: 2,
+  },
+]
+
+// Gộp tất cả câu hỏi
+export const ALL_QUESTIONS_FULL = [...ALL_QUESTIONS, ...EXTRA_QUESTIONS]
+
+export function getRandomQuestions(count = 50) {
+  const shuffled = [...ALL_QUESTIONS_FULL].sort(() => Math.random() - 0.5)
+  return shuffled.slice(0, Math.min(count, ALL_QUESTIONS_FULL.length))
 }
