@@ -5,8 +5,8 @@ import { getRandomQuestions } from '../data/questions'
 const DUCK_EMOJIS = ['🦆', '🐤', '🐥', '🐓', '🦅', '🦉', '🦜', '🐦']
 const DUCK_COLORS = ['#FFD700', '#FF6B6B', '#6BCB77', '#4D96FF', '#FF9F40', '#C77DFF', '#FF70A6', '#00C9A7']
 
-function generateId(len = 8) {
-  return Math.random().toString(36).slice(2, 2 + len).toUpperCase()
+function generateId(len = 12) {
+  return Math.random().toString(36).slice(2, 2 + len)
 }
 
 function generateRoomCode() {
@@ -14,8 +14,8 @@ function generateRoomCode() {
 }
 
 export function useGameRoom() {
-  const [screen, setScreen] = useState('lobby') // lobby | waiting | game | winner
-  const [myId] = useState(() => generateId(12))
+  const [screen, setScreen] = useState('lobby')
+  const [myId] = useState(() => generateId())
   const [myName, setMyName] = useState('')
   const [roomCode, setRoomCode] = useState('')
   const [isHost, setIsHost] = useState(false)
@@ -24,56 +24,83 @@ export function useGameRoom() {
   const [error, setError] = useState('')
 
   const channelRef = useRef(null)
+  const roomCodeRef = useRef('')
+  const screenRef = useRef('lobby')
 
-  // ── Cleanup on unmount ──────────────────────────────────────────────────────
+  // keep screenRef in sync
+  useEffect(() => { screenRef.current = screen }, [screen])
+
   useEffect(() => {
     return () => {
       if (channelRef.current) supabase.removeChannel(channelRef.current)
     }
   }, [])
 
-  // ── Subscribe to a room ─────────────────────────────────────────────────────
+  // ── Subscribe to room changes ───────────────────────────────────────────────
   const subscribeToRoom = useCallback((code) => {
     if (channelRef.current) supabase.removeChannel(channelRef.current)
 
     const channel = supabase
-      .channel(`room:${code}`)
-      // Room status changes (game start, finish)
+      .channel(`room-${code}-${Date.now()}`)
+      // Room status changes → trigger game start / finish for ALL players
       .on('postgres_changes', {
-        event: '*', schema: 'public', table: 'rooms',
-        filter: `id=eq.${code}`
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'rooms',
+        filter: `id=eq.${code}`,
       }, (payload) => {
-        if (payload.new) setRoom(payload.new)
-      })
-      // Player updates
-      .on('postgres_changes', {
-        event: '*', schema: 'public', table: 'players',
-        filter: `room_id=eq.${code}`
-      }, (payload) => {
-        if (payload.eventType === 'DELETE') {
-          setPlayers(prev => {
-            const next = { ...prev }
-            delete next[payload.old.id]
-            return next
-          })
-        } else if (payload.new) {
-          setPlayers(prev => ({ ...prev, [payload.new.id]: payload.new }))
+        const updated = payload.new
+        setRoom(updated)
+        if (updated.status === 'playing' && screenRef.current === 'waiting') {
+          setScreen('game')
+        }
+        if (updated.status === 'finished' && screenRef.current === 'game') {
+          setScreen('winner')
         }
       })
-      .subscribe()
+      // New player joins
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'players',
+        filter: `room_id=eq.${code}`,
+      }, (payload) => {
+        setPlayers(prev => ({ ...prev, [payload.new.id]: payload.new }))
+      })
+      // Player progress updates
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'players',
+        filter: `room_id=eq.${code}`,
+      }, (payload) => {
+        setPlayers(prev => ({ ...prev, [payload.new.id]: payload.new }))
+      })
+      // Player leaves
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'players',
+        filter: `room_id=eq.${code}`,
+      }, (payload) => {
+        setPlayers(prev => {
+          const next = { ...prev }
+          delete next[payload.old.id]
+          return next
+        })
+      })
+      .subscribe((status) => {
+        console.log('Realtime status:', status)
+      })
 
     channelRef.current = channel
   }, [])
 
-  // ── Create room (host) ──────────────────────────────────────────────────────
+  // ── Create room ─────────────────────────────────────────────────────────────
   const createRoom = useCallback(async (name) => {
     setError('')
     const code = generateRoomCode()
-    const playerCount = 0
-    const emoji = DUCK_EMOJIS[playerCount % DUCK_EMOJIS.length]
-    const color = DUCK_COLORS[playerCount % DUCK_COLORS.length]
 
-    // Insert room
     const { error: roomErr } = await supabase.from('rooms').insert({
       id: code,
       host_id: myId,
@@ -82,18 +109,23 @@ export function useGameRoom() {
     })
     if (roomErr) { setError('Không tạo được phòng: ' + roomErr.message); return }
 
-    // Insert self as player
+    const emoji = DUCK_EMOJIS[0]
+    const color = DUCK_COLORS[0]
+
     const { error: playerErr } = await supabase.from('players').insert({
       id: myId, room_id: code, name, emoji, color,
-      progress: 0, score: 0, question_index: 0, finished: false
+      progress: 0, score: 0, question_index: 0, finished: false,
     })
     if (playerErr) { setError('Lỗi khi vào phòng: ' + playerErr.message); return }
 
+    roomCodeRef.current = code
     setMyName(name)
     setRoomCode(code)
     setIsHost(true)
-    setPlayers({ [myId]: { id: myId, name, emoji, color, progress: 0, score: 0, question_index: 0, finished: false } })
+    setPlayers({ [myId]: { id: myId, name, emoji, color, progress: 0, score: 0, finished: false } })
     setRoom({ id: code, host_id: myId, status: 'waiting', questions: [] })
+
+    // Subscribe AFTER inserting so we don't miss own insert
     subscribeToRoom(code)
     setScreen('waiting')
   }, [myId, subscribeToRoom])
@@ -103,37 +135,35 @@ export function useGameRoom() {
     setError('')
     const upperCode = code.toUpperCase()
 
-    // Check room exists and is waiting
     const { data: roomData, error: roomErr } = await supabase
       .from('rooms').select('*').eq('id', upperCode).single()
     if (roomErr || !roomData) { setError('Không tìm thấy phòng "' + upperCode + '"'); return }
     if (roomData.status !== 'waiting') { setError('Phòng này đã bắt đầu rồi!'); return }
 
-    // Get current player count for emoji/color assignment
     const { data: existingPlayers } = await supabase
-      .from('players').select('id').eq('room_id', upperCode)
+      .from('players').select('*').eq('room_id', upperCode)
     const playerCount = existingPlayers?.length || 0
     const emoji = DUCK_EMOJIS[playerCount % DUCK_EMOJIS.length]
     const color = DUCK_COLORS[playerCount % DUCK_COLORS.length]
 
     const { error: playerErr } = await supabase.from('players').insert({
       id: myId, room_id: upperCode, name, emoji, color,
-      progress: 0, score: 0, question_index: 0, finished: false
+      progress: 0, score: 0, question_index: 0, finished: false,
     })
     if (playerErr) { setError('Lỗi khi vào phòng: ' + playerErr.message); return }
 
-    // Fetch all current players
-    const { data: allPlayers } = await supabase
-      .from('players').select('*').eq('room_id', upperCode)
-
     const playersMap = {}
-    allPlayers?.forEach(p => { playersMap[p.id] = p })
+    existingPlayers?.forEach(p => { playersMap[p.id] = p })
+    playersMap[myId] = { id: myId, name, emoji, color, progress: 0, score: 0, finished: false }
 
+    roomCodeRef.current = upperCode
     setMyName(name)
     setRoomCode(upperCode)
     setIsHost(false)
     setPlayers(playersMap)
     setRoom(roomData)
+
+    // Subscribe AFTER inserting
     subscribeToRoom(upperCode)
     setScreen('waiting')
   }, [myId, subscribeToRoom])
@@ -141,37 +171,31 @@ export function useGameRoom() {
   // ── Start game (host only) ──────────────────────────────────────────────────
   const startGame = useCallback(async () => {
     const questions = getRandomQuestions(8)
-    await supabase.from('rooms').update({
+    const { error } = await supabase.from('rooms').update({
       status: 'playing',
       questions,
     }).eq('id', roomCode)
+
+    if (error) { console.error('startGame error:', error); return }
+
+    // Host transitions immediately
     setScreen('game')
   }, [roomCode])
 
   // ── Update my player progress ───────────────────────────────────────────────
   const updateMyProgress = useCallback(async (updates) => {
-    await supabase.from('players').update({
+    const { error } = await supabase.from('players').update({
       ...updates,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     }).eq('id', myId)
+    if (error) console.error('updateMyProgress error:', error)
   }, [myId])
 
-  // ── Mark game finished for room ─────────────────────────────────────────────
+  // ── Finish game ─────────────────────────────────────────────────────────────
   const finishRoom = useCallback(async () => {
     await supabase.from('rooms').update({ status: 'finished' }).eq('id', roomCode)
     setScreen('winner')
   }, [roomCode])
-
-  // ── Watch for host starting game (non-host players) ─────────────────────────
-  useEffect(() => {
-    if (!room) return
-    if (room.status === 'playing' && screen === 'waiting') {
-      setScreen('game')
-    }
-    if (room.status === 'finished' && screen === 'game') {
-      setScreen('winner')
-    }
-  }, [room, screen])
 
   // ── Reset ───────────────────────────────────────────────────────────────────
   const reset = useCallback(async () => {
@@ -181,6 +205,7 @@ export function useGameRoom() {
     }
     setScreen('lobby')
     setRoomCode('')
+    roomCodeRef.current = ''
     setIsHost(false)
     setPlayers({})
     setRoom(null)
