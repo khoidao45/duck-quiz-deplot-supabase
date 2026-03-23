@@ -1,106 +1,114 @@
 export default function WaitingRoom({ roomCode, players, isHost, myId, onStart }) {
   const playerList = Object.values(players)
+  const colors = ['#FF6B6B','#4ECDC4','#45B7D1','#96CEB4','#FFEAA7','#DDA0DD','#98D8C8','#F7DC6F']
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <p style={styles.label}>Mã phòng của bạn</p>
-        <div style={styles.codeBox}>{roomCode}</div>
-        <p style={styles.hint}>📲 Chia sẻ mã này cho bạn bè!</p>
+    <div style={s.page}>
+      <div style={s.card}>
+        {/* Header */}
+        <div style={s.header}>
+          <div style={s.headerIcon}>🏠</div>
+          <div>
+            <div style={s.headerTitle}>Phòng chờ</div>
+            <div style={s.headerSub}>Chờ đủ người rồi bắt đầu thôi!</div>
+          </div>
+        </div>
 
-        <div style={styles.divider} />
+        {/* Room code */}
+        <div style={s.codeBox}>
+          <div style={s.codeLabel}>📋 Mã phòng</div>
+          <div style={s.code}>{roomCode}</div>
+          <div style={s.codeHint}>Chia sẻ mã này cho bạn bè nhé! 📲</div>
+        </div>
 
-        <p style={styles.playersTitle}>Người chơi ({playerList.length})</p>
-        <div style={styles.playersList}>
-          {playerList.map(p => (
-            <div key={p.id} style={{
-              ...styles.playerChip,
-              border: p.id === myId ? '1.5px solid #FFD700' : '1px solid rgba(255,255,255,0.2)',
-            }}>
-              <span style={{ fontSize: '22px' }}>{p.emoji}</span>
-              <span>{p.name}</span>
-              {p.id === myId && <span style={styles.youBadge}>bạn</span>}
-            </div>
-          ))}
+        {/* Players */}
+        <div style={s.section}>
+          <div style={s.sectionTitle}>👥 Người chơi ({playerList.length})</div>
+          <div style={s.playerGrid}>
+            {playerList.map((p, i) => (
+              <div key={p.id} style={{ ...s.playerChip, background: colors[i % colors.length] + '30', border: `2px solid ${colors[i % colors.length]}`, outline: p.id === myId ? `3px solid #FFD700` : 'none' }}>
+                <span style={{ fontSize: '22px' }}>{p.emoji}</span>
+                <span style={s.playerName}>{p.name}</span>
+                {p.id === myId && <span style={s.youTag}>bạn</span>}
+              </div>
+            ))}
+          </div>
         </div>
 
         {isHost ? (
-          <button
-            style={{
-              ...styles.startBtn,
-              opacity: playerList.length < 1 ? 0.5 : 1,
-            }}
-            onClick={onStart}
-            disabled={playerList.length < 1}
-          >
+          <button style={{ ...s.startBtn, opacity: playerList.length < 1 ? 0.5 : 1 }} onClick={onStart} disabled={playerList.length < 1}>
             🚀 Bắt đầu đua!
           </button>
         ) : (
-          <div style={styles.waitMsg}>
-            <span style={styles.dot} />
-            <span style={styles.dot} />
-            <span style={styles.dot} />
-            <span>Chờ host bắt đầu...</span>
+          <div style={s.waiting}>
+            <div style={s.dots}>
+              {[0,1,2].map(i => <span key={i} style={{ ...s.dot, animationDelay: `${i * 0.3}s` }} />)}
+            </div>
+            <span>Đang chờ host bắt đầu...</span>
           </div>
         )}
       </div>
+      <style>{`
+        @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+        @keyframes dotPulse { 0%,100%{opacity:0.3;transform:scale(0.8)} 50%{opacity:1;transform:scale(1.2)} }
+      `}</style>
     </div>
   )
 }
 
-const styles = {
-  container: {
-    minHeight: '100vh',
-    background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    padding: '1rem',
-    fontFamily: "'Segoe UI', system-ui, sans-serif",
+const s = {
+  page: {
+    minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 30%, #f093fb 60%, #4facfe 100%)',
+    padding: '1rem', fontFamily: "'Segoe UI', system-ui, sans-serif",
   },
   card: {
-    background: 'rgba(255,255,255,0.07)',
-    backdropFilter: 'blur(20px)',
-    border: '1px solid rgba(255,255,255,0.15)',
-    borderRadius: '24px',
-    padding: '2rem',
-    width: '100%', maxWidth: '420px',
-    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem',
+    background: 'rgba(255,255,255,0.96)', borderRadius: '28px',
+    padding: '2rem', width: '100%', maxWidth: '440px',
+    display: 'flex', flexDirection: 'column', gap: '1.25rem',
+    boxShadow: '0 20px 60px rgba(0,0,0,0.25)', border: '3px solid #fff',
   },
-  label: { margin: 0, color: 'rgba(255,255,255,0.6)', fontSize: '14px' },
+  header: { display: 'flex', alignItems: 'center', gap: '12px' },
+  headerIcon: { fontSize: '40px', animation: 'bounce 2s ease-in-out infinite' },
+  headerTitle: { fontSize: '22px', fontWeight: 800, color: '#333' },
+  headerSub: { fontSize: '13px', color: '#888' },
   codeBox: {
-    fontSize: '52px', fontWeight: 800, color: '#FFD700',
-    letterSpacing: '14px', textShadow: '0 0 30px rgba(255,215,0,0.3)',
+    background: 'linear-gradient(135deg, #667eea20, #764ba220)',
+    border: '2px dashed #764ba2', borderRadius: '20px',
+    padding: '1.25rem', textAlign: 'center',
   },
-  hint: { margin: 0, color: 'rgba(255,255,255,0.5)', fontSize: '13px' },
-  divider: { width: '100%', height: '1px', background: 'rgba(255,255,255,0.1)' },
-  playersTitle: { margin: 0, color: '#fff', fontWeight: 600, fontSize: '15px', alignSelf: 'flex-start' },
-  playersList: {
-    display: 'flex', flexWrap: 'wrap', gap: '8px', width: '100%',
-    justifyContent: 'flex-start',
-  },
+  codeLabel: { fontSize: '13px', color: '#888', fontWeight: 600, marginBottom: '4px' },
+  code: { fontSize: '52px', fontWeight: 900, letterSpacing: '10px', color: '#764ba2', lineHeight: 1 },
+  codeHint: { fontSize: '12px', color: '#aaa', marginTop: '6px' },
+  section: {},
+  sectionTitle: { fontSize: '14px', fontWeight: 700, color: '#555', marginBottom: '10px' },
+  playerGrid: { display: 'flex', flexWrap: 'wrap', gap: '8px' },
   playerChip: {
     display: 'flex', alignItems: 'center', gap: '8px',
-    background: 'rgba(255,255,255,0.08)',
-    borderRadius: '99px', padding: '8px 14px',
-    color: '#fff', fontSize: '14px',
+    borderRadius: '99px', padding: '8px 16px',
+    fontSize: '14px', fontWeight: 600, color: '#333',
   },
-  youBadge: {
-    background: 'rgba(255,215,0,0.2)', color: '#FFD700',
-    fontSize: '11px', padding: '2px 7px', borderRadius: '99px',
-    fontWeight: 600,
+  playerName: { maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  youTag: {
+    background: '#FFD700', color: '#5a3e00', fontSize: '10px',
+    padding: '2px 8px', borderRadius: '99px', fontWeight: 800,
   },
   startBtn: {
-    width: '100%', padding: '15px', borderRadius: '14px', border: 'none',
-    background: 'linear-gradient(135deg, #FFD700, #FFA500)',
-    color: '#3a2600', fontWeight: 700, fontSize: '18px',
-    cursor: 'pointer', marginTop: '0.5rem',
+    width: '100%', padding: '16px', borderRadius: '16px', border: 'none',
+    background: 'linear-gradient(135deg, #43e97b, #38f9d7)',
+    color: '#1a5e3a', fontWeight: 900, fontSize: '20px', cursor: 'pointer',
+    boxShadow: '0 6px 0 #2da866', transition: 'transform 0.1s',
+    fontFamily: 'inherit',
   },
-  waitMsg: {
-    display: 'flex', alignItems: 'center', gap: '8px',
-    color: 'rgba(255,255,255,0.5)', fontSize: '14px',
+  waiting: {
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    gap: '10px', padding: '1rem',
+    color: '#888', fontSize: '14px', fontWeight: 600,
   },
+  dots: { display: 'flex', gap: '4px' },
   dot: {
-    display: 'inline-block', width: '6px', height: '6px',
-    borderRadius: '50%', background: '#FFD700',
-    animation: 'pulse 1.4s ease-in-out infinite',
+    width: '8px', height: '8px', borderRadius: '50%',
+    background: '#764ba2', display: 'inline-block',
+    animation: 'dotPulse 1.2s ease-in-out infinite',
   },
 }

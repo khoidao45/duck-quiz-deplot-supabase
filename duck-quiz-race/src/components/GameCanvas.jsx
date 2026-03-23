@@ -1,194 +1,199 @@
 import { useEffect, useRef, useCallback, useState } from 'react'
 import QuestionBox from './QuestionBox'
 
-const TOTAL_STEPS = 50          // tổng số bước để về đích
-const BASE_SPEED = 0.006        // progress/sec tự động tiến (chậm hơn, dài hơn)
-const STEP_SIZE = 1 / TOTAL_STEPS  // 1 bước = 2% đường đua
+const TOTAL_STEPS = 40
+const BASE_SPEED = 0.005
+const STEP_SIZE = 1 / TOTAL_STEPS
+const FINISH_X = 0.90
+const QUESTION_EVERY = STEP_SIZE * 2
 
-// Rule mới: đúng → random +2/+3/+4 bước, sai → -1, timeout → 0
-function rollDice() {
-  return [2, 3, 4][Math.floor(Math.random() * 3)]
-}
-
-const FINISH_X = 0.92
-const QUESTION_EVERY = STEP_SIZE * 2  // cứ 2 bước tự đi thì ra câu hỏi
+function rollDice() { return [2, 3, 4][Math.floor(Math.random() * 3)] }
 
 export default function GameCanvas({ myId, myName, players, room, onProgressUpdate, onFinish }) {
   const canvasRef = useRef(null)
   const stateRef = useRef({
-    myProgress: 0,
-    myScore: 0,
-    questionIndex: 0,
-    nextQuestionAt: QUESTION_EVERY,
-    answering: false,
-    animFrame: null,
-    lastTime: 0,
-    _lastSync: 0,
+    myProgress: 0, myScore: 0, questionIndex: 0,
+    nextQuestionAt: QUESTION_EVERY, answering: false,
+    lastTime: 0, _lastSync: 0,
   })
+
+  // ✅ FIX: Lưu questions vào ref để game loop luôn đọc được giá trị mới nhất
+  const questionsRef = useRef([])
+  useEffect(() => {
+    if (room?.questions?.length > 0) {
+      questionsRef.current = room.questions
+    }
+  }, [room?.questions])
+
   const [currentQuestion, setCurrentQuestion] = useState(null)
   const [myScore, setMyScore] = useState(0)
-  const [diceResult, setDiceResult] = useState(null)  // hiển thị xúc xắc
+  const [diceResult, setDiceResult] = useState(null)
   const [finished, setFinished] = useState(false)
+  const finishedRef = useRef(false)
 
-  const questions = room?.questions || []
+  const playersRef = useRef(players)
+  useEffect(() => { playersRef.current = players }, [players])
 
-  // ── Canvas draw ─────────────────────────────────────────────────────────────
   const draw = useCallback((W, H, ts) => {
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
+    const players = playersRef.current
     ctx.clearRect(0, 0, W, H)
-
-    const waterY = H * 0.28
+    const waterY = H * 0.3
 
     // Sky
-    const skyGrad = ctx.createLinearGradient(0, 0, 0, waterY)
-    skyGrad.addColorStop(0, '#0a0a2e')
-    skyGrad.addColorStop(1, '#1a4a7a')
-    ctx.fillStyle = skyGrad
+    const sky = ctx.createLinearGradient(0, 0, 0, waterY)
+    sky.addColorStop(0, '#87CEEB')
+    sky.addColorStop(1, '#B0E2FF')
+    ctx.fillStyle = sky
     ctx.fillRect(0, 0, W, waterY)
 
-    // Stars
-    ctx.fillStyle = 'rgba(255,255,255,0.7)'
-    for (let i = 0; i < 25; i++) {
-      const sx = (i * 137.5) % W
-      const sy = (i * 53) % (waterY - 10)
-      const r = 0.8 + Math.sin(ts / 1000 + i) * 0.5
-      ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2); ctx.fill()
+    // Clouds
+    function drawCloud(cx, cy, r) {
+      ctx.fillStyle = 'rgba(255,255,255,0.92)'
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill()
+      ctx.beginPath(); ctx.arc(cx - r * 0.6, cy + r * 0.3, r * 0.7, 0, Math.PI * 2); ctx.fill()
+      ctx.beginPath(); ctx.arc(cx + r * 0.6, cy + r * 0.3, r * 0.7, 0, Math.PI * 2); ctx.fill()
     }
+    drawCloud(W * 0.1 + Math.sin(ts / 3000) * 10, waterY * 0.3, 22)
+    drawCloud(W * 0.45 + Math.sin(ts / 4000 + 1) * 8, waterY * 0.2, 28)
+    drawCloud(W * 0.78 + Math.sin(ts / 3500 + 2) * 10, waterY * 0.35, 20)
+
+    // Sun
+    ctx.fillStyle = '#FFD700'
+    ctx.beginPath(); ctx.arc(W - 40, 35, 22, 0, Math.PI * 2); ctx.fill()
+    ctx.strokeStyle = '#FFA500'; ctx.lineWidth = 2
+    for (let a = 0; a < 8; a++) {
+      const angle = (a / 8) * Math.PI * 2 + ts / 2000
+      ctx.beginPath()
+      ctx.moveTo(W - 40 + Math.cos(angle) * 26, 35 + Math.sin(angle) * 26)
+      ctx.lineTo(W - 40 + Math.cos(angle) * 32, 35 + Math.sin(angle) * 32)
+      ctx.stroke()
+    }
+
+    // Grass
+    ctx.fillStyle = '#5D8A3C'; ctx.fillRect(0, waterY - 10, W, 10)
+    ctx.fillStyle = '#7ABD52'; ctx.fillRect(0, waterY - 14, W, 4)
 
     // Water
-    const waterGrad = ctx.createLinearGradient(0, waterY, 0, H)
-    waterGrad.addColorStop(0, '#0d47a1')
-    waterGrad.addColorStop(1, '#01579b')
-    ctx.fillStyle = waterGrad
+    const water = ctx.createLinearGradient(0, waterY, 0, H)
+    water.addColorStop(0, '#2980B9')
+    water.addColorStop(1, '#1A5276')
+    ctx.fillStyle = water
     ctx.fillRect(0, waterY, W, H - waterY)
 
-    // Step markers (50 vạch nhỏ)
-    for (let step = 1; step <= TOTAL_STEPS; step++) {
-      const x = W * (step / TOTAL_STEPS) * FINISH_X
-      const isMajor = step % 5 === 0
-      ctx.strokeStyle = isMajor ? 'rgba(255,215,0,0.5)' : 'rgba(255,255,255,0.12)'
-      ctx.lineWidth = isMajor ? 1.5 : 0.5
-      ctx.setLineDash(isMajor ? [] : [3, 4])
-      ctx.beginPath(); ctx.moveTo(x, waterY); ctx.lineTo(x, H); ctx.stroke()
-      ctx.setLineDash([])
-      if (isMajor) {
-        ctx.fillStyle = 'rgba(255,215,0,0.7)'
-        ctx.font = '9px sans-serif'
-        ctx.textAlign = 'center'
-        ctx.fillText(step, x, waterY + 10)
-      }
-    }
-
     // Waves
-    ctx.strokeStyle = 'rgba(255,255,255,0.15)'
-    ctx.lineWidth = 1.5
-    for (let wy = waterY + 20; wy < H - 10; wy += 30) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 3
+    for (let wy = waterY + 18; wy < H - 10; wy += 32) {
       ctx.beginPath()
-      for (let x = 0; x <= W; x += 3) {
-        const y = wy + Math.sin((x / W) * 14 + ts / 1000) * 3
+      for (let x = 0; x <= W; x += 4) {
+        const y = wy + Math.sin((x / 60) + ts / 700) * 4
         x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
       }
       ctx.stroke()
     }
 
-    // Finish line
-    const finX = W * FINISH_X
-    ctx.strokeStyle = '#FFD700'
-    ctx.lineWidth = 3
-    ctx.setLineDash([10, 6])
-    ctx.beginPath(); ctx.moveTo(finX, waterY - 14); ctx.lineTo(finX, H); ctx.stroke()
-    ctx.setLineDash([])
-    ctx.font = '22px serif'
-    ctx.textAlign = 'center'
-    ctx.fillText('🏁', finX, waterY - 14)
+    // Step markers
+    for (let step = 1; step <= TOTAL_STEPS; step++) {
+      const x = (step / TOTAL_STEPS) * W * FINISH_X
+      const isMajor = step % 5 === 0
+      ctx.strokeStyle = isMajor ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.15)'
+      ctx.lineWidth = isMajor ? 2 : 1
+      ctx.setLineDash(isMajor ? [] : [4, 4])
+      ctx.beginPath(); ctx.moveTo(x, waterY + 2); ctx.lineTo(x, H); ctx.stroke()
+      ctx.setLineDash([])
+      if (isMajor) {
+        ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.font = 'bold 9px sans-serif'; ctx.textAlign = 'center'
+        ctx.fillText(step, x, waterY + 13)
+      }
+    }
 
-    // Players (sorted by join order for stable lanes)
+    // Finish flag
+    const finX = W * FINISH_X
+    ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 3
+    ctx.beginPath(); ctx.moveTo(finX, waterY - 16); ctx.lineTo(finX, H); ctx.stroke()
+    ctx.font = '24px serif'; ctx.textAlign = 'center'
+    ctx.fillText('🏁', finX, waterY - 18)
+
+    // Players
     const sortedPlayers = Object.values(players).sort((a, b) => a.id.localeCompare(b.id))
-    const playerCount = sortedPlayers.length || 1
-    const laneH = Math.min(56, (H - waterY - 20) / playerCount)
+    const laneH = Math.min(58, (H - waterY - 16) / Math.max(sortedPlayers.length, 1))
 
     sortedPlayers.forEach((p, i) => {
       const prog = p.id === myId ? stateRef.current.myProgress : (p.progress || 0)
-      const duckX = Math.max(20, W * Math.min(prog, FINISH_X - 0.005))
-      const laneY = waterY + 14 + i * laneH + laneH * 0.5
-      const bob = Math.sin(ts / 420 + i * 1.5) * 2.5
+      const duckX = Math.max(24, W * Math.min(prog, FINISH_X - 0.01))
+      const laneY = waterY + 12 + i * laneH + laneH * 0.5
+      const bob = Math.sin(ts / 380 + i * 1.5) * 3
+      const isMe = p.id === myId
 
-      // Progress bar (mini)
-      const barW = W * FINISH_X - 20
-      const barX = 10
-      ctx.fillStyle = 'rgba(255,255,255,0.07)'
-      ctx.fillRect(barX, laneY + 12, barW, 3)
-      ctx.fillStyle = p.id === myId ? '#FFD700' : p.color || '#4D96FF'
-      ctx.fillRect(barX, laneY + 12, barW * Math.min(prog / FINISH_X, 1), 3)
+      // Mini progress bar
+      ctx.fillStyle = 'rgba(0,0,0,0.2)'
+      ctx.beginPath(); ctx.roundRect(8, laneY + 14, W * FINISH_X - 16, 4, 2); ctx.fill()
+      ctx.fillStyle = isMe ? '#FFD700' : '#4ECDC4'
+      ctx.beginPath(); ctx.roundRect(8, laneY + 14, (W * FINISH_X - 16) * Math.min(prog / FINISH_X, 1), 4, 2); ctx.fill()
 
       // Shadow
-      ctx.fillStyle = 'rgba(0,0,0,0.2)'
-      ctx.beginPath()
-      ctx.ellipse(duckX, laneY + 15, 15, 4, 0, 0, Math.PI * 2)
-      ctx.fill()
+      ctx.fillStyle = 'rgba(0,0,0,0.15)'
+      ctx.beginPath(); ctx.ellipse(duckX, laneY + 16, 16, 5, 0, 0, Math.PI * 2); ctx.fill()
 
       // Duck
-      ctx.font = '26px serif'
-      ctx.textAlign = 'center'
+      ctx.font = '30px serif'; ctx.textAlign = 'center'
       ctx.fillText(p.emoji, duckX, laneY + bob)
 
-      // Name + score
-      const isMe = p.id === myId
+      // Name bubble
+      const score = isMe ? stateRef.current.myScore : (p.score || 0)
+      const nameText = `${p.name} ⭐${score}`
       ctx.font = isMe ? 'bold 11px sans-serif' : '10px sans-serif'
-      ctx.fillStyle = isMe ? '#FFD700' : 'rgba(255,255,255,0.75)'
-      const score = p.id === myId ? stateRef.current.myScore : (p.score || 0)
-      ctx.fillText(`${p.name} ⭐${score}`, duckX, laneY - 12 + bob)
+      const tw = ctx.measureText(nameText).width
+      const bx = duckX - tw / 2 - 6, by = laneY - 26 + bob, bw = tw + 12, bh = 16
+      ctx.fillStyle = isMe ? '#FFD700' : 'rgba(255,255,255,0.9)'
+      ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 6); ctx.fill()
+      ctx.fillStyle = isMe ? '#5a3e00' : '#333'
+      ctx.fillText(nameText, duckX, by + 11)
 
-      // Step counter
-      const myStep = Math.round(prog / (FINISH_X / TOTAL_STEPS))
-      ctx.font = '9px sans-serif'
-      ctx.fillStyle = 'rgba(255,255,255,0.4)'
-      ctx.fillText(`${Math.min(myStep, TOTAL_STEPS)}/${TOTAL_STEPS}`, duckX, laneY + 24)
+      const step = Math.min(Math.round(prog / (FINISH_X / TOTAL_STEPS)), TOTAL_STEPS)
+      ctx.font = '9px sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.5)'
+      ctx.fillText(`${step}/${TOTAL_STEPS}`, duckX, laneY + 26)
     })
-
     ctx.textAlign = 'left'
-  }, [players, myId])
+  }, [myId]) // ✅ Không phụ thuộc vào players hay questions nữa — dùng ref
 
-  // ── Game loop ───────────────────────────────────────────────────────────────
   const loop = useCallback((ts) => {
     const s = stateRef.current
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const W = canvas.width
-    const H = canvas.height
     const dt = Math.min((ts - s.lastTime) / 1000, 0.05)
     s.lastTime = ts
 
-    if (!s.answering && !finished) {
+    if (!s.answering && !finishedRef.current) {
       s.myProgress = Math.min(s.myProgress + dt * BASE_SPEED, FINISH_X)
 
-      // Trigger question
-      if (s.myProgress >= s.nextQuestionAt && s.questionIndex < questions.length) {
+      // ✅ Đọc questions từ ref — luôn mới nhất, không bao giờ stale
+      const qs = questionsRef.current
+      if (s.myProgress >= s.nextQuestionAt && s.questionIndex < qs.length && qs.length > 0) {
         s.answering = true
-        setCurrentQuestion(questions[s.questionIndex])
+        setCurrentQuestion(qs[s.questionIndex])
       }
 
-      // Reached finish
-      if (s.myProgress >= FINISH_X && !finished) {
+      if (s.myProgress >= FINISH_X && !finishedRef.current) {
+        finishedRef.current = true
         setFinished(true)
         onProgressUpdate({ progress: FINISH_X, score: s.myScore, finished: true, finish_rank: 1 })
         onFinish()
         return
       }
 
-      // Sync to DB ~every 500ms
       if (ts - s._lastSync > 500) {
         s._lastSync = ts
         onProgressUpdate({ progress: s.myProgress, score: s.myScore })
       }
     }
 
-    draw(W, H, ts)
+    draw(canvas.width, canvas.height, ts)
     s.animFrame = requestAnimationFrame(loop)
-  }, [draw, finished, questions, onProgressUpdate, onFinish])
+  }, [draw, onProgressUpdate, onFinish]) // ✅ Không có questions trong deps
 
   useEffect(() => {
     const s = stateRef.current
@@ -198,22 +203,19 @@ export default function GameCanvas({ myId, myName, players, room, onProgressUpda
 
   useEffect(() => {
     function resize() {
-      const canvas = canvasRef.current
-      if (!canvas) return
-      canvas.width = canvas.offsetWidth
-      canvas.height = Math.max(340, Math.min(500, window.innerHeight * 0.7))
+      const c = canvasRef.current
+      if (!c) return
+      c.width = c.offsetWidth
+      c.height = Math.max(320, Math.min(500, window.innerHeight * 0.72))
     }
     resize()
     window.addEventListener('resize', resize)
     return () => window.removeEventListener('resize', resize)
   }, [])
 
-  // ── Answer handler ──────────────────────────────────────────────────────────
   function handleAnswer(_idx, correct, timeout) {
     const s = stateRef.current
-
     if (timeout) {
-      // Hết giờ → đứng yên
       showDice(0)
     } else if (correct) {
       const steps = rollDice()
@@ -222,11 +224,9 @@ export default function GameCanvas({ myId, myName, players, room, onProgressUpda
       setMyScore(s.myScore)
       showDice(steps)
     } else {
-      // Sai → lùi 1 bước
-      s.myProgress = Math.max(s.myProgress - STEP_SIZE * 1, 0)
+      s.myProgress = Math.max(s.myProgress - STEP_SIZE, 0)
       showDice(-1)
     }
-
     s.questionIndex++
     s.nextQuestionAt = s.myProgress + QUESTION_EVERY
     s.answering = false
@@ -235,10 +235,9 @@ export default function GameCanvas({ myId, myName, players, room, onProgressUpda
 
   function showDice(steps) {
     setDiceResult(steps)
-    setTimeout(() => setDiceResult(null), 1200)
+    setTimeout(() => setDiceResult(null), 1400)
   }
 
-  // HUD rank
   const sortedForRank = Object.values(players).sort((a, b) => {
     const ap = a.id === myId ? stateRef.current.myProgress : (a.progress || 0)
     const bp = b.id === myId ? stateRef.current.myProgress : (b.progress || 0)
@@ -248,64 +247,51 @@ export default function GameCanvas({ myId, myName, players, room, onProgressUpda
   const myStep = Math.min(Math.round(stateRef.current.myProgress / (FINISH_X / TOTAL_STEPS)), TOTAL_STEPS)
 
   return (
-    <div style={styles.wrapper}>
-      {/* HUD */}
-      <div style={styles.hud}>
-        <span style={styles.hudName}>🦆 {myName}</span>
-        <span style={styles.hudStep}>Bước {myStep}/{TOTAL_STEPS}</span>
-        <span style={styles.hudScore}>⭐ {myScore}</span>
-        <span style={styles.hudRank}>#{myRank}/{Object.keys(players).length}</span>
+    <div style={s.wrapper}>
+      <div style={s.hud}>
+        <div style={s.hudChip}>🦆 <b>{myName}</b></div>
+        <div style={{ ...s.hudChip, background: '#43e97b', color: '#1a5e3a' }}>Bước {myStep}/{TOTAL_STEPS}</div>
+        <div style={{ ...s.hudChip, background: '#f9d423', color: '#5a3e00' }}>⭐ {myScore}</div>
+        <div style={{ ...s.hudChip, background: '#4ECDC4', color: '#1a5e5a' }}>#{myRank}/{Object.keys(players).length}</div>
       </div>
 
-      <canvas ref={canvasRef} style={styles.canvas} />
+      <canvas ref={canvasRef} style={s.canvas} />
 
-      {/* Dice result popup */}
       {diceResult !== null && (
-        <div style={{
-          ...styles.dicePopup,
-          background: diceResult > 0 ? 'rgba(74,222,128,0.95)' : diceResult === 0 ? 'rgba(100,100,100,0.95)' : 'rgba(248,113,113,0.95)',
-        }}>
-          {diceResult > 0 ? `🎲 +${diceResult} bước!` : diceResult === 0 ? '⏰ Hết giờ! Đứng yên' : '❌ -1 bước!'}
+        <div style={{ ...s.dice, background: diceResult > 0 ? '#43e97b' : diceResult === 0 ? '#95a5a6' : '#ff6b6b' }}>
+          {diceResult > 0 ? `🎲 +${diceResult} bước!` : diceResult === 0 ? '⏰ Đứng yên!' : '💥 -1 bước!'}
         </div>
       )}
 
-      {/* Question */}
-      {currentQuestion && (
-        <QuestionBox
-          question={currentQuestion}
-          onAnswer={handleAnswer}
-          timeLimit={12}
-        />
-      )}
+      {currentQuestion && <QuestionBox question={currentQuestion} onAnswer={handleAnswer} timeLimit={12} />}
+
+      <style>{`@keyframes diceIn{0%{transform:translateX(-50%) scale(0.5);opacity:0}50%{transform:translateX(-50%) scale(1.2)}100%{transform:translateX(-50%) scale(1);opacity:1}}`}</style>
     </div>
   )
 }
 
-const styles = {
+const s = {
   wrapper: {
     position: 'relative', width: '100%', height: '100vh',
     display: 'flex', flexDirection: 'column',
-    background: '#0a0a2e', overflow: 'hidden',
     fontFamily: "'Segoe UI', system-ui, sans-serif",
+    overflow: 'hidden', background: '#87CEEB',
   },
   hud: {
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    padding: '8px 14px',
-    background: 'rgba(0,0,0,0.6)',
-    borderBottom: '1px solid rgba(255,255,255,0.1)',
-    gap: '8px', flexWrap: 'wrap',
+    display: 'flex', gap: '6px', padding: '8px 10px', flexWrap: 'wrap',
+    background: 'rgba(255,255,255,0.92)', borderBottom: '3px solid #e0e0e0', zIndex: 10,
   },
-  hudName: { color: '#FFD700', fontWeight: 700, fontSize: '14px' },
-  hudStep: { color: '#fff', fontSize: '13px', fontWeight: 600 },
-  hudScore: { color: '#4ade80', fontSize: '13px' },
-  hudRank: { color: 'rgba(255,255,255,0.5)', fontSize: '12px' },
+  hudChip: {
+    padding: '5px 12px', borderRadius: '99px',
+    background: '#667eea', color: '#fff', fontSize: '13px', fontWeight: 700,
+  },
   canvas: { flex: 1, width: '100%', display: 'block' },
-  dicePopup: {
-    position: 'absolute', top: '60px', left: '50%',
-    transform: 'translateX(-50%)',
-    padding: '10px 24px', borderRadius: '99px',
-    color: '#fff', fontWeight: 700, fontSize: '18px',
+  dice: {
+    position: 'absolute', top: '70px', left: '50%',
+    padding: '12px 28px', borderRadius: '99px',
+    color: '#fff', fontWeight: 900, fontSize: '20px',
     zIndex: 20, whiteSpace: 'nowrap',
-    animation: 'fadeUp 1.2s ease forwards',
+    boxShadow: '0 6px 20px rgba(0,0,0,0.2)',
+    animation: 'diceIn 0.4s ease-out forwards',
   },
 }

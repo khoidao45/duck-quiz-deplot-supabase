@@ -170,7 +170,7 @@ export function useGameRoom() {
 
   // ── Start game (host only) ──────────────────────────────────────────────────
   const startGame = useCallback(async () => {
-    const questions = getRandomQuestions(8)
+    const questions = getRandomQuestions(50)
     const { error } = await supabase.from('rooms').update({
       status: 'playing',
       questions,
